@@ -1,10 +1,13 @@
 import os  # 创建文件夹, 文件是否存在
+import threading
 import time  # time 计时
 import pickle  # 保存和读取cookie实现免登陆的一个工具
 from time import sleep
 from selenium import webdriver  # 操作浏览器的工具
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+import subprocess
 
 """
 一. 实现免登陆
@@ -15,7 +18,7 @@ damai_url = 'https://www.damai.cn/'
 # 登录
 login_url = 'https://passport.damai.cn/login?ru=https%3A%2F%2Fwww.damai.cn%2F'
 # 抢票目标页
-target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709415170140'
+target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709534959083'
 # 场次，第一场填0，第二场填1，以此类推
 sku_times = 0
 # 票档，同上
@@ -40,10 +43,12 @@ class Concert:
             "userAgent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36"
         }
         chrome_options = Options()
-        chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
+        chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        # chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
         self.status = 0  # 状态, 表示当前操作执行到了哪个步骤
         self.login_method = 1  # {0:模拟登录, 1:cookie登录}自行选择登录的方式
-        self.driver = webdriver.Chrome(executable_path='chromedriver.exe', options=chrome_options)  # 当前浏览器驱动对象
+        self.driver = webdriver.Chrome(executable_path='./chromedriver.exe', options=chrome_options)  # 当前浏览器驱动对象
+        print(1)
 
     # cookies: 登录网站时出现的 记录用户信息用的
     def set_cookies(self):
@@ -174,6 +179,7 @@ class Concert:
                     print("选定票档" + str(sku_tickets))
 
                 self.driver.find_element(By.CLASS_NAME, "sku-footer-buy-button").click()
+                break
 
             except Exception as e:
                 print(e)
@@ -190,27 +196,28 @@ class Concert:
         """下单操作"""
         try:
             # 默认选第一个购票人信息
-            if not sku_skip:
-                print("选定观影人...")
-                se_buts = self.driver.find_elements(By.CLASS_NAME, "icondanxuan-weixuan_")
-                for b in se_buts:
-                    b.click()
-                    sleep(0.9)
-                print("填写联系人...")
-            self.driver.find_element(By.XPATH, '//input[@placeholder="请填写联系人姓名"]').send_keys(contact)
-            self.driver.find_element(By.XPATH, '//input[@placeholder="请填写联系人手机号"]').send_keys(contact_phone)
-            sleep(0.9)
-            self.driver.find_element(By.XPATH, '//div[@view-name="MColorFrameLayout"]').click()
-
-
+            # if not sku_skip:
+            # print("选定观影人...")
+            # se_buts = self.driver.find_element(By.CLASS_NAME, "icondanxuan-weixuan_")
+            # se_buts.click()
+                # for b in se_buts:
+                #     b.click()
+                #     sleep(0.9)
+                # print("填写联系人...")
+            # self.driver.find_element(By.XPATH, '//input[@placeholder="请填写联系人姓名"]').send_keys(contact)
+            # self.driver.find_element(By.XPATH, '//input[@placeholder="请填写联系人手机号"]').send_keys(contact_phone)
+            # sleep(0.9)
+            submit = self.driver.find_element(By.XPATH, '//div[@view-name="MColorFrameLayout"]')
+            x = submit.location["x"]
+            y = submit.location["y"]
+            print(str(x) + "," + str(y))
+            ActionChains(self.driver).move_by_offset(x, y).click().perform()
+            ActionChains(self.driver).move_by_offset(-x, -y).perform()
+            # self.driver.execute_script("arguments[0].click();", submit)
 
         except Exception as e:
             print('###购票人信息选中失败, 自行查看元素位置###')
             print(e)
-        # 最后一步提交订单
-        time.sleep(0.5)  # 太快了不好, 影响加载 导致按钮点击无效
-        self.driver.find_element(By.XPATH, '//*[@id="container"]/div/div[9]/button').click()
-        time.sleep(20)
 
     def isElementExist(self, element):
         """判断元素是否存在"""
@@ -228,7 +235,16 @@ class Concert:
         self.driver.quit()
 
 
+def start_chrome():
+    cmd = '"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\\chrome-profile"'
+    subprocess.run(cmd)
+
+
 if __name__ == '__main__':
+    # thread = threading.Thread(target=start_chrome())
+    # thread.start()
+    # print(1)
+    # sleep(5)
     con = Concert()
     try:
         con.enter_concert()  # 打开浏览器
