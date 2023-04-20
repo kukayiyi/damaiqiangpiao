@@ -21,7 +21,7 @@ damai_url = 'https://www.damai.cn/'
 # 登录
 login_url = 'https://passport.damai.cn/login?ru=https%3A%2F%2Fwww.damai.cn%2F'
 # 抢票目标页
-target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709534959083'
+target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709402698664'
 # 场次，第一场填0，第二场填1，以此类推
 sku_times = 0
 # 票档，同上
@@ -33,7 +33,7 @@ contact = "习近平"
 # 手机号
 contact_phone = "18857774314"
 # 是否跳过选场，如果提前设置了场次、票档、数量和观影人可以设置跳过，务必注意所有东西都要提前填好，包括联系人
-sku_skip = True
+sku_skip = False
 # 浏览器调试端口
 watch_port = "9222"
 
@@ -104,7 +104,8 @@ class Concert:
         print('###打开浏览器,进入大麦网###')
         # 调用登录
         # self.login()  # 先登录再说
-        self.driver.refresh()  # 刷新页面
+        self.driver.get(target_url)
+        # self.driver.refresh()  # 刷新页面
         self.status = 2  # 登录成功标识
         print('###登录成功###')
         # 处理弹窗
@@ -181,21 +182,21 @@ class Concert:
                     times_elements = times.find_elements(By.CLASS_NAME, "theme-normal")
                     times_elements[sku_times].click()
                     print("选定场次" + str(sku_times))
-                    sleep(0.1)
+                    sleep(0.3)
 
                     print("开始选票档")
                     tickets = self.driver.find_element(By.CLASS_NAME, ticket_name)
                     tickets_elements = tickets.find_elements(By.CLASS_NAME, "theme-normal")
                     tickets_elements[sku_tickets].click()
                     print("选定票档" + str(sku_tickets))
-                    sleep(0.1)
+                    sleep(0.3)
 
-                print("开始选数量")
-                add_num_button = self.driver.find_element(By.CLASS_NAME, "plus-enable")
-                for _ in range(sku_number-1):
-                    add_num_button.click()
-                    sleep(0.1)
-                sleep(0.2)
+                    print("开始选数量")
+                    add_num_button = self.driver.find_element(By.CLASS_NAME, "plus-enable")
+                    for _ in range(sku_number-1):
+                        add_num_button.click()
+                        sleep(0.3)
+
                 print("选定数量" + str(sku_tickets))
                 self.driver.find_element(By.CLASS_NAME, "sku-footer-buy-button").click()
                 break
