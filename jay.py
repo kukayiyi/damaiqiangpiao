@@ -21,13 +21,13 @@ damai_url = 'https://www.damai.cn/'
 # 登录
 login_url = 'https://passport.damai.cn/login?ru=https%3A%2F%2Fwww.damai.cn%2F'
 # 抢票目标页
-target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709402698664'
+target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709534959083'
 # 场次，第一场填0，第二场填1，以此类推
 sku_times = 0
 # 票档，同上
 sku_tickets = 3
 # 数量
-sku_number = 1
+sku_number = 4
 # 联系人
 contact = "习近平"
 # 手机号
@@ -103,7 +103,7 @@ class Concert:
         """打开浏览器"""
         print('###打开浏览器,进入大麦网###')
         # 调用登录
-        self.login()  # 先登录再说
+        # self.login()  # 先登录再说
         self.driver.refresh()  # 刷新页面
         self.status = 2  # 登录成功标识
         print('###登录成功###')
@@ -181,22 +181,22 @@ class Concert:
                     times_elements = times.find_elements(By.CLASS_NAME, "theme-normal")
                     times_elements[sku_times].click()
                     print("选定场次" + str(sku_times))
-                    sleep(0.9)
+                    sleep(0.1)
 
                     print("开始选票档")
                     tickets = self.driver.find_element(By.CLASS_NAME, ticket_name)
                     tickets_elements = tickets.find_elements(By.CLASS_NAME, "theme-normal")
                     tickets_elements[sku_tickets].click()
                     print("选定票档" + str(sku_tickets))
-                    sleep(0.9)
+                    sleep(0.1)
 
-                    print("开始选数量")
-                    add_num_button = self.driver.find_element(By.CLASS_NAME, "plus-enable")
-                    for _ in range(sku_number-1):
-                        add_num_button.click()
-                        sleep(0.9)
-                    print("选定票档" + str(sku_tickets))
-
+                print("开始选数量")
+                add_num_button = self.driver.find_element(By.CLASS_NAME, "plus-enable")
+                for _ in range(sku_number-1):
+                    add_num_button.click()
+                    sleep(0.1)
+                sleep(0.2)
+                print("选定数量" + str(sku_tickets))
                 self.driver.find_element(By.CLASS_NAME, "sku-footer-buy-button").click()
                 break
 
@@ -216,12 +216,12 @@ class Concert:
         try:
             # 默认选第一个购票人信息
             # if not sku_skip:
-            # print("选定观影人...")
-            # se_buts = self.driver.find_element(By.CLASS_NAME, "icondanxuan-weixuan_")
-            # se_buts.click()
-                # for b in se_buts:
-                #     b.click()
-                #     sleep(0.9)
+            print("选定观影人...")
+            se_buts = self.driver.find_elements(By.CLASS_NAME, "icondanxuan-weixuan_")
+            # se_buts.click()s
+            for b in se_buts[:4]:
+                b.click()
+                sleep(0.1)
                 # print("填写联系人...")
             # self.driver.find_element(By.XPATH, '//input[@placeholder="请填写联系人姓名"]').send_keys(contact)
             # self.driver.find_element(By.XPATH, '//input[@placeholder="请填写联系人手机号"]').send_keys(contact_phone)
