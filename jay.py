@@ -1,4 +1,7 @@
+import argparse
 import os  # 创建文件夹, 文件是否存在
+import string
+import sys
 import threading
 import time  # time 计时
 import pickle  # 保存和读取cookie实现免登陆的一个工具
@@ -18,7 +21,7 @@ damai_url = 'https://www.damai.cn/'
 # 登录
 login_url = 'https://passport.damai.cn/login?ru=https%3A%2F%2Fwww.damai.cn%2F'
 # 抢票目标页
-target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709534959083'
+target_url = 'https://m.damai.cn/damai/detail/item.html?itemId=709402698664'
 # 场次，第一场填0，第二场填1，以此类推
 sku_times = 0
 # 票档，同上
@@ -30,25 +33,27 @@ contact = "习近平"
 # 手机号
 contact_phone = "18857774314"
 # 是否跳过选场，如果提前设置了场次、票档、数量和观影人可以设置跳过，务必注意所有东西都要提前填好，包括联系人
-sku_skip = False
+sku_skip = True
+# 浏览器调试端口
+watch_port = "9222"
 
 
 
 # class Concert:
 class Concert:
     # 初始化加载
+    time_saver = None
     def __init__(self):
         mobile_emulation = {
             "deviceMetrics": {"width": 360, "height": 640, "pixelRatio": 3.0},
             "userAgent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36"
         }
         chrome_options = Options()
-        chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:" + watch_port)
         # chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
         self.status = 0  # 状态, 表示当前操作执行到了哪个步骤
         self.login_method = 1  # {0:模拟登录, 1:cookie登录}自行选择登录的方式
         self.driver = webdriver.Chrome(executable_path='./chromedriver.exe', options=chrome_options)  # 当前浏览器驱动对象
-        print(1)
 
     # cookies: 登录网站时出现的 记录用户信息用的
     def set_cookies(self):
@@ -118,26 +123,30 @@ class Concert:
                     if '缺货' in buybutton:
                         # self.status = 2  # 没有进行更改操作
                         # self.driver.get(target_url)  # 刷新页面 继续执行操作
-                        print("缺货")
-                        self.driver.find_element(By.CLASS_NAME, 'buy__button').click()
-                        sleep(0.5)
-                        self.choice_sku('sku-times-card', 'sku-tickets-card')
+                        print("抢票失败了！")
+                        sys.exit()
                     elif "立即" in buybutton:
                         # 点击购买，进行选
                         self.driver.find_element(By.CLASS_NAME, 'buy__button').click()
-                        sleep(0.5)
+                        sleep(0.1)
                         self.choice_sku('sku-times-card', 'sku-tickets-card')
                         sleep(0.5)
+
                     elif '即将开抢' in buybutton:
-                        print("还没开卖哦！紧张紧张...别忘了预填所有能填的东西！")
-                        sleep(0.5)
-                        self.driver.get(target_url)  # 刷新页面 继续执行操作
+                        if self.time_saver is None:
+                            self.time_saver = time.time()
+                        elif time.time()-self.time_saver > 60:
+                            print("刷新页面..")
+                            self.driver.refresh()
+                            self.time_saver = None
+                        print("还没开卖哦！紧张紧张...别忘了预填所有能填的东西！", end="\r")
+
                     elif '选座' in buybutton:
                         self.driver.find_element(By.CLASS_NAME, 'buy__button').click()
                         self.status = 5
                     else:
                         self.driver.get(target_url)
-                        time.sleep(5)
+                        time.sleep(3)
                 except Exception as e:
                     print(e)
                     print('###没有跳转到订单结算界面###')
@@ -149,8 +158,18 @@ class Concert:
                     # 实现下单的逻辑
                     while True:
                         # 如果标题为确认订单
-                        print('正在加载.......')
                         self.check_order()
+                        print('正在加载.......')
+                        if self.time_saver is None:
+                            self.time_saver = time.time()
+                        elif time.time() - self.time_saver >= 3:
+                            print("刷新页面..")
+                            self.driver.refresh()
+                            self.time_saver = None
+                        sleep(0.3)
+                        if "付款" in self.driver.title:
+                            print("抢票成功,恭喜捏!")
+                            sys.exit()
 
 
     def choice_sku(self, time_name: str, ticket_name: str):  # 选择场次和票档和数量
@@ -241,10 +260,13 @@ def start_chrome():
 
 
 if __name__ == '__main__':
-    # thread = threading.Thread(target=start_chrome())
-    # thread.start()
-    # print(1)
-    # sleep(5)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=str)
+    args = parser.parse_args()
+    if args.port is not None:
+        watch_port = args.port
+
+    print(f"开始执行！跳过设置信息:{sku_skip},监测浏览器端口:{watch_port}")
     con = Concert()
     try:
         con.enter_concert()  # 打开浏览器
